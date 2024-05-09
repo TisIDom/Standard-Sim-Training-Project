@@ -1,9 +1,9 @@
 import os
-import cv2
 import time
+import cv2
 import json
 import numpy as np
-from glob import glob
+import glob
 from PIL import Image
 from skimage import measure
 #from matplotlib.patches import Polygon
@@ -14,33 +14,36 @@ from utils.constants import Action
 
 
 def find_files(root: str) -> List[Dict[str, str]]:
-    imgs = sorted([filename for filename in glob(f"{root}/*.png") if "change-0" in filename])
     files = []
-    for name in imgs:
-        label_file1 = name.replace(".png", "-segmentation0001.exr")
-        label_file2 = label_file1.replace("change-0", "change-1")
-        label_json1 = name.replace(".png", "_label.json")
-        label_json2 = label_json1.replace("change-0", "change-1")
-        files_exist = (
-            os.path.isfile(label_file1)
-            and os.path.isfile(label_file2)
-            and os.path.isfile(label_json1)
-            and os.path.isfile(label_json2)
-        )
-
-        if files_exist:
-            bbox_json = name.replace("_change-0.png", "-boxes.json")
-            label_file = name.replace("_change-0.png", "-label.png")
-            files.append(
-                {
-                    "label1": label_file1,
-                    "label2": label_file2,
-                    "label": label_file,
-                    "label1_json": label_json1,
-                    "label2_json": label_json2,
-                    "bbox_json": bbox_json,
-                }
-            )
+    for folder in sorted(glob.glob(os.path.join(root, "*"))):
+        if os.path.isdir(folder):  # Check if it's a directory
+        # Search for images inside the subfolder
+            image_files = sorted([filename for filename in glob.glob(os.path.join(folder, "*.png"))])
+            for image_file in image_files:
+                if "change-0" in image_file:  # Filter for images with "change-0"
+                    label_file1 = image_file.replace(".png", "-segmentation0001.exr")
+                    label_file2 = label_file1.replace("change-0", "change-1")
+                    label_json1 = image_file.replace(".png", "_label.json")
+                    label_json2 = label_json1.replace("change-0", "change-1")
+                    files_exist = (
+                        os.path.isfile(label_file1)
+                        and os.path.isfile(label_file2)
+                        and os.path.isfile(label_json1)
+                        and os.path.isfile(label_json2)
+                    )  
+                    if files_exist:
+                        bbox_json = image_file.replace("_change-0.png", "-boxes.json")
+                        label_file = image_file.replace("_change-0.png", "-label.png")
+                        files.append(
+                            {
+                                "label1": label_file1,
+                                "label2": label_file2,
+                                "label": label_file,
+                                "label1_json": label_json1,
+                                "label2_json": label_json2,
+                                "bbox_json": bbox_json,
+                            }
+                        )
     return files
 
 def make_bbox_camogram(
@@ -368,7 +371,6 @@ def create_submask_from_array(mask_image):
 
     return sub_masks
 
-
 def create_sub_mask_annotation(sub_mask, image_id, category_id, annotation_id, is_crowd, scene):
     # Find contours (boundary lines) around each sub-mask
     # Note: there could be multiple contours if the object
@@ -428,12 +430,13 @@ def create_sub_mask_annotation(sub_mask, image_id, category_id, annotation_id, i
     else:
         return None
 
-if __name__ == "__main__":
-    data_root = "/renders_multicam_diff_1"
+def main_function():
+    data_root = "./data/renders_multicam_diff_1"
 
     anno_dict = dict({"images": [], "annotations": [], "categories": []})
 
     files = find_files(data_root)
+    
     #files = [{'label1': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1_change-0-segmentation0001.exr', 'label2': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1_change-1-segmentation0001.exr', 'label': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1-label.png', 'label1_json': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1_change-0_label.json', 'label2_json': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1_change-1_label.json', 'bbox_json': '/app/renders_multicam_diff_1/circ.us.0000_0017c0b964c2492db349f0591c6af20a_cam-1-boxes.json'}]
     #files = [{'label1': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1_change-0-segmentation0001.exr', 'label2': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1_change-1-segmentation0001.exr', 'label': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1-label.png', 'label1_json': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1_change-0_label.json', 'label2_json': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1_change-1_label.json', 'bbox_json': '/app/renders_multicam_diff_1/cmps.ca.0000_f7fb7fe8a30e41b9b6ec838bb4135e65_cam-1-boxes.json'}]
 
@@ -565,24 +568,4 @@ if __name__ == "__main__":
                         print("shift ", sku_id)
                         j+=1
         i+=1
-
-
-    # Add info
-    anno_dict["info"] = dict({
-        "description": "Synthetic dataset created in Blender for change detection, instance segmentation, and depth estimation.",
-        "url": "https://github.com/Standard-Cognition/blender-synth",
-        "version": 1,
-        "year": 2021,
-        "contributor": "Cristina Mata, Nick Locascio, Mohammed Sheikh, Kenneth Kihara",
-        "date_created": "July 1, 2021"
-    })
-    # Add license
-    anno_dict["licenses"] = [dict({
-        "url": "url_to_our_license",
-        "id": 1,
-        "name": "Attribution License"
-    })]
-
-    with open("/app/synthetic_data_baselines/utils/synthetic_anno.json", 'w') as jsonFile:
-        json.dump(anno_dict, jsonFile)
 

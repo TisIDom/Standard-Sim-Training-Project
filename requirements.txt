@@ -1,0 +1,7 @@
+imageio==2.34.1
+numpy==1.26.4
+opencv_python==4.9.0.80
+Pillow==10.3.0
+Shapely==2.0.4
+scikit-image==0.23.2
+tensorflow==2.10.0
