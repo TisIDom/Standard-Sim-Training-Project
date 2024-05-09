@@ -5,7 +5,7 @@ to remove scene names from image set files, and to print dataset statitstics.
 import os
 import imageio
 import numpy as np
-from create_dataset_json import find_files
+from datasets.create_dataset_json import find_files
 
 def move_scene_errors(data_root, error_root, errors_file):
     """ Moves files from data_root to error_root dir if scene is in errors file
