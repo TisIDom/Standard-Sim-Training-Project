@@ -5,3 +5,4 @@ class Action(Enum):
     REMOVED = 1
     ADDED = 2
     SHIFTED = 3
+    SHIFTED_SMALL = 4

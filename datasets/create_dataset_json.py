@@ -568,4 +568,23 @@ def main_function():
                         print("shift ", sku_id)
                         j+=1
         i+=1
+        
+            # Add info
+    anno_dict["info"] = dict({
+        "description": "Synthetic dataset created in Blender for change detection, instance segmentation, and depth estimation.",
+        "url": "https://github.com/Standard-Cognition/blender-synth",
+        "version": 1,
+        "year": 2021,
+        "contributor": "Cristina Mata, Nick Locascio, Mohammed Sheikh, Kenneth Kihara",
+        "date_created": "July 1, 2021"
+    })
+    # Add license
+    anno_dict["licenses"] = [dict({
+        "url": "url_to_our_license",
+        "id": 1,
+        "name": "Attribution License"
+    })]
+
+    with open("./utils/synthetic_anno.json", 'w') as jsonFile:
+        json.dump(anno_dict, jsonFile)
 
