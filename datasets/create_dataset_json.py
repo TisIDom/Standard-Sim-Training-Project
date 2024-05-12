@@ -445,7 +445,7 @@ def main_function():
     skus = set()
     for file in files:
         print(file)
-        scene_name='_'.join(file['label1'].split('/')[-1].split('_')[:3])
+        scene_name='_'.join(file['label1'].split('\\')[2].split('_')[:3])
         # (From preprocess_synthetic_data.py)
         label_file1 = file["label1"]
         label_file2 = file["label2"]
