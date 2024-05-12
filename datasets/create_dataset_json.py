@@ -532,7 +532,7 @@ def main_function():
         # Make a mask for every removed SKU
         for item in items2_removed:
             change_mask_removed = np.zeros_like(label1)
-            change_mask_removed = make_masks(change_mask_removed, set({item}), label2_json, label2, "put")
+            change_mask_removed = make_masks(change_mask_removed, set({item}), label2_json, label1, "take")
             if np.any(change_mask_removed):
                 submasks = create_submask_from_array(change_mask_removed)
                 for color, sub_mask in submasks.items():
