@@ -53,6 +53,7 @@ def sort_by_place(data_path, sort_by):
       
       # Move file to the corresponding folder
       source = os.path.join(data_path, filename)
+      
       destination = os.path.join(folder_path, filename)
-      os.rename(source, destination)
+      os.replace(source, destination)
 
