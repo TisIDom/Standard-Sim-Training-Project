@@ -6,7 +6,6 @@ import numpy as np
 import glob
 from PIL import Image
 from skimage import measure
-#from matplotlib.patches import Polygon
 from shapely.geometry import Polygon, MultiPolygon
 from typing import Any, Dict, List, Optional, Set
 
@@ -45,91 +44,6 @@ def find_files(root: str) -> List[Dict[str, str]]:
                             }
                         )
     return files
-
-def make_bbox_camogram(
-    label_file1: str, label_file2: str, segmentation_file1: str, segmentation_file2: str
-) -> Dict[str, List[List[int]]]:
-    data1 = json.load(open(label_file1, "r"))
-    data2 = json.load(open(label_file2, "r"))
-    sku_name_to_section_name1 = data1["sku_name_to_section_name"]
-    sku_name_to_section_name2 = data2["sku_name_to_section_name"]
-
-    index_mapping1 = data1["index_mapping"]
-    shifted_skus1 = {index_mapping1[k] for k in data1["shifted_skus"]}
-    shifted_skus_small1 = {index_mapping1[k] for k in data1["shifted_skus_small"]}
-
-    index_mapping2 = data2["index_mapping"]
-    added_skus2 = {index_mapping2[k] for k in data2["added_skus"]}
-    removed_skus2 = {index_mapping2[k] for k in data2["removed_skus"]}
-    shifted_skus2 = {index_mapping2[k] for k in data2["shifted_skus"]}
-    shifted_skus_small2 = {index_mapping2[k] for k in data2["shifted_skus_small"]}
-
-    added_skus = added_skus2
-    removed_skus = removed_skus2
-    shifted_skus = shifted_skus1.union(shifted_skus2)
-    shifted_skus_small = shifted_skus_small1.union(shifted_skus_small2)
-
-    segment_id_to_section_name1 = {index_mapping1[k] for k in sku_name_to_section_name1.keys()}
-    segment_id_to_section_name2 = {index_mapping2[k] for k in sku_name_to_section_name2.keys()}
-    segment_id_to_section_name = segment_id_to_section_name1.union(segment_id_to_section_name2)
-
-    segmentation_image1 = cv2.imread(segmentation_file1, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)[
-        :, :, 0
-    ]
-    segmentation_image2 = cv2.imread(segmentation_file2, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)[
-        :, :, 0
-    ]
-    H, W = segmentation_image1.shape[:2]
-    ids_in_image1 = np.unique(segmentation_image1).astype(int)
-    ids_in_image2 = np.unique(segmentation_image2).astype(int)
-    ids_in_image = np.unique(np.concatenate((ids_in_image1, ids_in_image2), axis=0))
-    change_boxes_json = []
-    small_change_boxes_json = []
-    no_change_boxes_json = []
-    for segment_id in ids_in_image:
-        if segment_id not in segment_id_to_section_name:
-            continue
-        if segment_id in added_skus:
-            action = Action.ADDED.value
-            segmentation_image = segmentation_image2
-        elif segment_id in removed_skus:
-            action = Action.REMOVED.value
-            segmentation_image = segmentation_image1
-        elif segment_id in shifted_skus:
-            action = Action.SHIFTED.value
-            segmentation_image = segmentation_image2
-        elif segment_id in shifted_skus_small:
-            action = Action.SHIFTED_SMALL.value
-            segmentation_image = segmentation_image2
-        else:
-            action = Action.NULL.value
-            segmentation_image = segmentation_image2
-        pixels_to_add = np.where(segmentation_image == segment_id)
-        if len(pixels_to_add[0]) < 45:
-            continue
-        tlbr = np.array(
-            [
-                np.min(pixels_to_add[0]),
-                np.min(pixels_to_add[1]),
-                np.max(pixels_to_add[0]),
-                np.max(pixels_to_add[1]),
-            ]
-        )
-        area = (tlbr[2] - tlbr[0]) * (tlbr[3] - tlbr[1])
-        if area > 64:
-            normed_box = [tlbr[0] / H, tlbr[1] / W, tlbr[2] / H, tlbr[3] / W, action]
-            if action in [Action.ADDED.value, Action.REMOVED.value, Action.SHIFTED.value]:
-                change_boxes_json.append(normed_box)
-            elif segment_id == Action.SHIFTED_SMALL.value:
-                small_change_boxes_json.append(normed_box)
-            else:
-                no_change_boxes_json.append(normed_box)
-    boxes_json = {
-        "change_boxes": change_boxes_json,
-        "small_change_boxes": small_change_boxes_json,
-        "no_change_boxes": no_change_boxes_json,
-    }
-    return boxes_json
 
 def make_masks(
     change_mask,
